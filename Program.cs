@@ -28,25 +28,87 @@ public class BlackBoard
 {
     public List<InfoTable> list = new List<InfoTable>();
     public ReadNetworkConfig reader = null;
+    public int scanners = 0;
+    /// <summary>
+    /// Показывает результаты скана
+    /// </summary>
+    public void ShowBlackBoard()
+    {
+        //Ожидалка
+        Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} ");
+        do
+        {
+
+            Console.SetCursorPosition(0, 0);
+            ConsoleColor c = Console.BackgroundColor;
+            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} | ESC = выход");
+            Console.BackgroundColor = c;
+
+            /// Console.SetCursorPosition(x, y);
+
+            int i = 0;
+            lock (list)
+                list.ForEach(it =>
+                {
+                    try
+                    {
+                        //Выводим сообщения
+                        string show_host = it.Address.ToString();
+
+                        if (it.Host != null)
+                        {
+                            show_host = it.Host.Substring(0, it.Host.Length > 34 ? 35 : it.Host.Length);
+                        } //host !=null
+                        string status = it.status == IPStatus.Success ? "OK" : "Проблемы";
+                        string speed = it.Speed.ToString();
+                        if (speed == "-1") { speed = "∞"; }
+
+                        try { Console.Write($"{show_host,-35} - {speed,5:G} Кб/c - {status,-10}| "); } catch { }
+                        i++;
+                        if (i % 3 == 0) { Console.WriteLine(); }
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message + " >> " + ex.Source + " >> " + ex.Data);
+                    }
+                }
+                );
+
+            if (scanners > 0) { Thread.Sleep(10); }
+
+            if (Console.KeyAvailable)
+            {
+                if (Console.ReadKey(false).Key == ConsoleKey.Escape)
+                { break; }
+            }
+
+        } while ((scanners > 0) && (list.Count > 0));
+
+        GC.Collect();
+    } //Показ сканеров
+
 
     public async void Scan()
     {
         //загрузка данных
         Console.WriteLine("Сканирование ...");
 
-        int scanners = 0;
+        
         foreach (var ip in reader.working_machines)
         {
-            
             try {
                 Task task = new Task(
                        () =>
                        {
                           
                            InfoTable ifx = new InfoTable(ip);
-                           lock (list) { 
-                                        list.Add(ifx);
-                               //ifx.MeasureSpeed();
+                           lock (list) {
+                                           ifx.MeasureSpeed();
+                                           list.Add(ifx);
+                                        
                                         }
                        });
                     task.Start();
@@ -59,114 +121,48 @@ public class BlackBoard
             }
         }
 
-
-
-        Console.Clear();
-
-        do
+      
+        // Cycle scan
+        scanners = 0;
+        lock (list)
         {
-            Console.SetCursorPosition(0, 0);
-            Console.WriteLine("Оценка скорости ...");
-
-            // Cycle scan
-            scanners = 0;
-            lock (list)
+            list.ForEach(itask =>
             {
-                list.ForEach(itask =>
-                {
-                    scanners++;
-                    Task task = new Task(
-                       () =>
-                       {
-                           try
-                           {
-                               lock (list)
-                               {
-                                   itask.MeasureSpeed();
-                               }
-                           }
-                           catch (Exception ex)
-                           {
-                               Console.WriteLine(ex.Message);
-                           }
-                           finally
-                           {
-                               scanners--;
-                           }
-                       }); //task
-                    task.Start();
-                    Thread.Sleep(1);
-
-                });//foraech
-             }//lock
-
-
-            
-            //Ожидалка
-            Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} ");
-            do
-            {
-
-                Console.SetCursorPosition(0, 0);
-                ConsoleColor c = Console.BackgroundColor;
-                Console.BackgroundColor= ConsoleColor.DarkBlue;
-                Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} | ESC = выход");
-                Console.BackgroundColor = c;
-
-                /// Console.SetCursorPosition(x, y);
-
-                int i = 0;
-                lock (list)
-                    list.ForEach(it =>
+                scanners++;
+                Task task = new Task(
+                    () =>
+                    {
+                        scanners++;
+                        try
                         {
-                            try
+                            lock (list)
                             {
-                                //Выводим сообщения
-                                    string show_host = it.Address.ToString();
-
-                                    if (it.Host != null)
-                                    {
-                                        show_host = it.Host.Substring(0, it.Host.Length > 34 ? 35 : it.Host.Length);
-                                     } //host !=null
-                                    string status = it.status == IPStatus.Success ? "OK" : "Проблемы";
-                                    string speed = it.Speed.ToString();
-                                    if (speed == "-1") { speed = "∞"; }
-
-                                    try { Console.Write($"{show_host,-35} - {speed,5:G} Кб/c - {status,-10}| "); } catch { }
-                                    i++;
-                                    if (i % 3 == 0) { Console.WriteLine(); }
-                                
-
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.Message + " >> " + ex.Source + " >> " + ex.Data);
+                                itask.MeasureSpeed();
                             }
                         }
-                    );
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.Message);
+                        }
+                        finally
+                        {
+                            scanners--;
+                        }
+                    }); //task
+                task.Start();
+                Thread.Sleep(1);
 
-                if (scanners > 0) { Thread.Sleep(100); }
+            });//foraech
+            }//lock
 
-                if (Console.KeyAvailable)
-                {
-                    if (Console.ReadKey(false).Key == ConsoleKey.Escape)
-                    { break; }
-                }
-
-            } while ((scanners > 0) && (list.Count > 0));
-            
-            GC.Collect();
+    } //scan
 
 
-        } while (true); // scan permanently
-
-        Console.WriteLine("Произошел выход...");
-
-    }
     public BlackBoard( ReadNetworkConfig r)
     {
         reader = r;
         Scan();
+        ShowBlackBoard();
 
     }
 
@@ -174,6 +170,7 @@ public class BlackBoard
     {
         reader = new ReadNetworkConfig();
         Scan(); 
+        ShowBlackBoard() ;  
 
     } //class
 }

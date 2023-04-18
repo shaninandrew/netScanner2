@@ -8,19 +8,19 @@
     "net7.0": []
   },
   "packageFolders": {
-    "C:\\Users\\Шанин\\.nuget\\packages\\": {}
+    "C:\\Users\\hedge\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Шанин\\Documents\\личное\\net scanner smart\\MainScanner\\MainScanner.csproj",
-      "projectName": "MainScanner",
-      "projectPath": "C:\\Users\\Шанин\\Documents\\личное\\net scanner smart\\MainScanner\\MainScanner.csproj",
-      "packagesPath": "C:\\Users\\Шанин\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Шанин\\Documents\\личное\\net scanner smart\\MainScanner\\obj\\",
+      "projectUniqueName": "G:\\Мои проекты.VS\\NetScanner\\NetScanner\\NetScanner.csproj",
+      "projectName": "NetScanner",
+      "projectPath": "G:\\Мои проекты.VS\\NetScanner\\NetScanner\\NetScanner.csproj",
+      "packagesPath": "C:\\Users\\hedge\\.nuget\\packages\\",
+      "outputPath": "G:\\Мои проекты.VS\\NetScanner\\NetScanner\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Шанин\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\hedge\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -61,7 +61,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.201\\RuntimeIdentifierGraph.json"
       }
     }
   }

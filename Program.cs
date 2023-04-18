@@ -29,8 +29,6 @@ public class BlackBoard
     public List<InfoTable> list = new List<InfoTable>();
     public ReadNetworkConfig reader = null;
 
-
-
     public async void Scan()
     {
         //загрузка данных
@@ -47,10 +45,9 @@ public class BlackBoard
                           
                            InfoTable ifx = new InfoTable(ip);
                            lock (list) { 
-                               
-                               list.Add(ifx);
+                                        list.Add(ifx);
                                //ifx.MeasureSpeed();
-                           }
+                                        }
                        });
                     task.Start();
 
@@ -58,7 +55,7 @@ public class BlackBoard
             catch { }
             finally
             {
-                Thread.Sleep(20);
+                Thread.Sleep(2);
             }
         }
 
@@ -73,32 +70,35 @@ public class BlackBoard
 
             // Cycle scan
             scanners = 0;
-            foreach (var itask in list)
+            lock (list)
             {
-                scanners++;
-                Task task = new Task(
-                   () =>
-                   {
-                       try
+                list.ForEach(itask =>
+                {
+                    scanners++;
+                    Task task = new Task(
+                       () =>
                        {
-                           lock (list)
+                           try
                            {
-                               itask.MeasureSpeed();
+                               lock (list)
+                               {
+                                   itask.MeasureSpeed();
+                               }
                            }
-                       }
-                       catch (Exception ex)
-                       {
-                           Console.WriteLine(ex.Message);
-                       }
-                       finally
-                       {
-                           scanners--;
-                       }
-                   }); //task
-                task.Start();
-                Thread.Sleep(2);
+                           catch (Exception ex)
+                           {
+                               Console.WriteLine(ex.Message);
+                           }
+                           finally
+                           {
+                               scanners--;
+                           }
+                       }); //task
+                    task.Start();
+                    Thread.Sleep(1);
 
-            }
+                });//foraech
+             }//lock
 
 
             
@@ -122,14 +122,21 @@ public class BlackBoard
                             try
                             {
                                 //Выводим сообщения
-                                string show_host = it.Host.Substring(0, it.Host.Length > 34 ? 35 : it.Host.Length);
-                                string status = it.status == IPStatus.Success ? "OK" : "Проблемы";
-                                string speed = it.Speed.ToString();
-                                if (speed == "-1") { speed = "∞";  }
+                                    string show_host = it.Address.ToString();
 
-                                try { Console.Write($"{show_host,-35} - {speed,5:G} Кб/c - {status,-10}| "); } catch { }
-                                i++;
-                                if (i % 2 == 0) { Console.WriteLine(); }
+                                    if (it.Host != null)
+                                    {
+                                        show_host = it.Host.Substring(0, it.Host.Length > 34 ? 35 : it.Host.Length);
+                                     } //host !=null
+                                    string status = it.status == IPStatus.Success ? "OK" : "Проблемы";
+                                    string speed = it.Speed.ToString();
+                                    if (speed == "-1") { speed = "∞"; }
+
+                                    try { Console.Write($"{show_host,-35} - {speed,5:G} Кб/c - {status,-10}| "); } catch { }
+                                    i++;
+                                    if (i % 3 == 0) { Console.WriteLine(); }
+                                
+
                             }
                             catch (Exception ex)
                             {
@@ -179,7 +186,7 @@ public class InfoTable
     public string Host;
     public IPAddress Address;
     public  double Speed;
-    public IPStatus status;
+    public IPStatus status=IPStatus.BadDestination;
 
     public InfoTable  (string host )
     { 
@@ -190,7 +197,11 @@ public class InfoTable
     public InfoTable(IPAddress address)
     {
         Address = address;
-        Host = System.Net.Dns.GetHostByAddress(Address).HostName;
+        try { Host = System.Net.Dns.GetHostByAddress(Address).HostName; }
+        catch 
+        {
+            Address = System.Net.Dns.Resolve(address.ToString()).AddressList.First();
+        }
     }
     /// <summary>
     /// Измерение скорости
@@ -202,8 +213,6 @@ public class InfoTable
         try
         {
             PingReply r =  await p.SendPingAsync(Address,100, buffer);
-
-
             status = r.Status;
             if (r.RoundtripTime == 0) { Speed = -1; }
             else

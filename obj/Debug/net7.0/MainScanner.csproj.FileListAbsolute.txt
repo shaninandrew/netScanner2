@@ -1,0 +1,15 @@
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\bin\Debug\net7.0\MainScanner.exe
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\bin\Debug\net7.0\MainScanner.deps.json
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\bin\Debug\net7.0\MainScanner.runtimeconfig.json
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\bin\Debug\net7.0\MainScanner.dll
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\bin\Debug\net7.0\MainScanner.pdb
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\MainScanner.csproj.AssemblyReference.cache
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\MainScanner.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\MainScanner.AssemblyInfoInputs.cache
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\MainScanner.AssemblyInfo.cs
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\MainScanner.csproj.CoreCompileInputs.cache
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\MainScanner.dll
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\refint\MainScanner.dll
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\MainScanner.pdb
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\MainScanner.genruntimeconfig.cache
+C:\Users\Шанин\Documents\личное\net scanner smart\MainScanner\obj\Debug\net7.0\ref\MainScanner.dll

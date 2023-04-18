@@ -124,8 +124,10 @@ public class BlackBoard
                                 //Выводим сообщения
                                 string show_host = it.Host.Substring(0, it.Host.Length > 34 ? 35 : it.Host.Length);
                                 string status = it.status == IPStatus.Success ? "OK" : "Проблемы";
+                                string speed = it.Speed.ToString();
+                                if (speed == "-1") { speed = "∞";  }
 
-                                try { Console.Write($"{show_host,-35} - {it.Speed,5:G} Кб/c - {status,-10}| "); } catch { }
+                                try { Console.Write($"{show_host,-35} - {speed,5:G} Кб/c - {status,-10}| "); } catch { }
                                 i++;
                                 if (i % 2 == 0) { Console.WriteLine(); }
                             }

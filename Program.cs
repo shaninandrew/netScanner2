@@ -197,7 +197,7 @@ public class InfoTable
     /// </summary>
     public async Task<double> MeasureSpeed()
     {
-        byte[] buffer = new byte[1000];
+        byte[] buffer = new byte[10000];
         Ping p = new Ping();
         try
         {

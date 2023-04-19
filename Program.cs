@@ -8,14 +8,34 @@ using System.Net.NetworkInformation;
 using System.Diagnostics.Metrics;
 using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Xml;
 
 ReadNetworkConfig config = new ReadNetworkConfig();
 config.ReadNetworkConfigAsync(new CancellationToken(false));
 config.show();
 
+/*
+HttpClient client = new HttpClient();
+int sum = 0;
+Stopwatch watch = Stopwatch.StartNew();
+for (int i = 0; i < 10; i++)
+{
+    string s = "";
+    if (i % 2 == 0) { s = await client.GetStringAsync("https://google.com/"); }
+    if (i % 2 == 1) { s = await client.GetStringAsync("https://yandex.ru/"); }
+    sum += s.Length;
+}
+watch.Stop();
+
+double inet_speed= sum / (watch.ElapsedMilliseconds+1);
+Console.WriteLine("Скорость интренета {inet_speed,7:G}");
+*/
 BlackBoard board = new BlackBoard(config);
 
-board.Scan();
+
+//board.Scan();
 
 
 
@@ -29,20 +49,25 @@ public class BlackBoard
     public List<InfoTable> list = new List<InfoTable>();
     public ReadNetworkConfig reader = null;
     public int scanners = 0;
+    public bool exit =false;
+    public double inet_speed = 0.0f;
     /// <summary>
     /// Показывает результаты скана
     /// </summary>
     public void ShowBlackBoard()
     {
         //Ожидалка
+          
+        Console.SetCursorPosition(0, 0);
         Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} ");
+        if (list.Count>0)
         do
         {
-
+           
             Console.SetCursorPosition(0, 0);
             ConsoleColor c = Console.BackgroundColor;
             Console.BackgroundColor = ConsoleColor.DarkBlue;
-            Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} | ESC = выход");
+            Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} | Интернет {this.inet_speed} Кб/с | ESC = выход                               \r");
             Console.BackgroundColor = c;
 
             /// Console.SetCursorPosition(x, y);
@@ -58,15 +83,26 @@ public class BlackBoard
 
                         if (it.Host != null)
                         {
-                            show_host = it.Host.Substring(0, it.Host.Length > 34 ? 35 : it.Host.Length);
+                            show_host = it.Host.Substring(0, it.Host.Length > 20 ? 20 : it.Host.Length);
                         } //host !=null
-                        string status = it.status == IPStatus.Success ? "OK" : "Проблемы";
+                        string status = it.status == IPStatus.Success ? "OK" : "!!";
                         string speed = it.Speed.ToString();
                         if (speed == "-1") { speed = "∞"; }
 
-                        try { Console.Write($"{show_host,-35} - {speed,5:G} Кб/c - {status,-10}| "); } catch { }
-                        i++;
-                        if (i % 3 == 0) { Console.WriteLine(); }
+                        string Http = "";
+                        if (it.flag_http) { Http += "HTTP";  }
+                        if (it.flag_https) 
+                            { 
+                                if (Http != "") { Http += "/";  } 
+                                    Http += "HTTPS"; 
+                            }
+
+                        if ((it.status == IPStatus.Success) || ( it.Host !=null ))
+                          {
+                            try { Console.Write($"{show_host,-20} {Http,-13} -{it.min_Speed,7:G}...{speed,7:G}...{it.max_Speed,7:G} Кб/c - {it.ping_time,3} мс - {status,-10}| "); } catch { }
+                            i++;
+                            if (i % 4 == 0) { Console.WriteLine(); }
+                        }
 
 
                     }
@@ -75,21 +111,61 @@ public class BlackBoard
                         Console.WriteLine(ex.Message + " >> " + ex.Source + " >> " + ex.Data);
                     }
                 }
-                );
+                ); //list each
 
-            if (scanners > 0) { Thread.Sleep(10); }
+            if (scanners > 0) { Thread.Sleep(100); }
 
             if (Console.KeyAvailable)
             {
                 if (Console.ReadKey(false).Key == ConsoleKey.Escape)
-                { break; }
+                { exit = true;
+                    break; }
             }
 
+        Thread.Sleep(100);
         } while ((scanners > 0) && (list.Count > 0));
 
         GC.Collect();
     } //Показ сканеров
 
+
+    public async void Refresh()
+    {
+        // Cycle scan
+        scanners = 0;
+        
+
+        lock (list)
+        {
+            list.ForEach(itask =>
+            {
+                if (itask.active)  scanners++;
+             
+            });//list
+
+
+        }//lock
+
+        Console.WriteLine("Определение скорости интернета....");
+
+        HttpClient client = new HttpClient();
+        client.Timeout = TimeSpan.FromSeconds(5);
+        int sum = 0;
+        Stopwatch watch = Stopwatch.StartNew();
+        for (int i = 0; i < 10; i++)
+        {
+            string s = "";
+            if (i % 2 == 0) { s = await client.GetStringAsync("https://google.com/"); }
+            if (i % 2 == 1) { s = await client.GetStringAsync("https://yandex.ru/"); }
+            sum += s.Length;
+        }
+        watch.Stop();
+        client.Dispose();
+        inet_speed = sum / (watch.ElapsedMilliseconds + 1);
+
+        
+
+    }
 
     public async void Scan()
     {
@@ -103,77 +179,66 @@ public class BlackBoard
                 Task task = new Task(
                        () =>
                        {
-                          
                            InfoTable ifx = new InfoTable(ip);
                            lock (list) {
-                                           ifx.MeasureSpeed();
                                            list.Add(ifx);
-                                        
                                         }
                        });
                     task.Start();
 
                    }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message); 
+            }
             finally
             {
-                Thread.Sleep(2);
+               // Thread.Sleep(2);
             }
-        }
-
-      
-        // Cycle scan
-        scanners = 0;
-        lock (list)
-        {
-            list.ForEach(itask =>
-            {
-                scanners++;
-                Task task = new Task(
-                    () =>
-                    {
-                        scanners++;
-                        try
-                        {
-                            lock (list)
-                            {
-                                itask.MeasureSpeed();
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.Message);
-                        }
-                        finally
-                        {
-                            scanners--;
-                        }
-                    }); //task
-                task.Start();
-                Thread.Sleep(1);
-
-            });//foraech
-            }//lock
+        }//foreach
 
     } //scan
 
 
-    public BlackBoard( ReadNetworkConfig r)
+    public BlackBoard (ReadNetworkConfig? r)
     {
-        reader = r;
-        Scan();
-        ShowBlackBoard();
 
-    }
+        if (r == null)
+        { reader = new ReadNetworkConfig(); }
+        else
+        { reader = r; }
+        
+         Scan();
+        
+        exit = false;
+        
+        //очистка экрана
+        Console.Clear();
+        Task t = new Task(()=> 
+        {
+            do { 
+                Console.CursorTop = 0; Console.CursorLeft = 60; Console.WriteLine("***"); 
+                //    Refresh();
+            } while (!exit); 
+        });
+        t.Start();
 
-    public BlackBoard()
-    {
-        reader = new ReadNetworkConfig();
-        Scan(); 
-        ShowBlackBoard() ;  
 
-    } //class
-}
+        do
+        {
+            //Обнова в фоне
+            if (this.scanners == 0)
+            {
+                Refresh();
+            }
+            Thread.Sleep(100);
+
+            ShowBlackBoard();
+        } while (!exit);
+
+    }//DeskTOp
+
+}//class
 
 /// <summary>
 /// Сканер хоста
@@ -182,13 +247,37 @@ public class InfoTable
 {
     public string Host;
     public IPAddress Address;
-    public  double Speed;
+    public  double Speed =0;
+    public  double inet_Speed = 0;
+
+    public int ping_time = 0;
+
+    public double max_Speed = 0;
+    public double min_Speed = 0;
+
+    public bool flag_http = false;
+    public bool flag_https = false;
+
     public IPStatus status=IPStatus.BadDestination;
+    private bool locked = false;
+    public bool  active = false;
+
+    private bool _once_url_check =false;
+
+
+    public void Stop()
+    {
+        locked = true;
+        active = false;
+    }
 
     public InfoTable  (string host )
     { 
         Host = host;
         Address = System.Net.Dns.Resolve(Host).AddressList.First();
+        new Task(() => { MeasureSpeed(new CancellationToken(false)); }).Start();
+       // new Task(() => { MeasureToUrl(null) ; }).Start();
+
     }
 
     public InfoTable(IPAddress address)
@@ -198,36 +287,140 @@ public class InfoTable
         catch 
         {
             Address = System.Net.Dns.Resolve(address.ToString()).AddressList.First();
+
         }
+        new Task(() => { MeasureSpeed(new CancellationToken(false)); }).Start();
+        
+            
+        
     }
-    /// <summary>
-    /// Измерение скорости
-    /// </summary>
-    public async Task<double> MeasureSpeed()
+
+    /// 
+    /// 
+    public async Task MeasureToUrl(Uri? url)
     {
-        byte[] buffer = new byte[10000];
+
+        //Защелка от множества копий
+        if (_once_url_check ) { return ; }
+        if (!_once_url_check) {
+                                _once_url_check = !false;
+                                Thread.Sleep(10);
+                                }
+        do
+        {
+            System.Net.Http.HttpClient hc = new System.Net.Http.HttpClient();
+            hc.Timeout = TimeSpan.FromSeconds(4);
+            try
+            {
+                
+                
+                List<string> check_inet = new List<string>();
+                check_inet.Add("https://google.com/");
+                check_inet.Add("https://yandex.ru/");
+                check_inet.Add("https://java.com/");
+                check_inet.Add("https://xakep.ru/");
+                //случайный адрес
+
+                if (url == null)
+                { url = new Uri(check_inet.ElementAt(new Random(213).Next(check_inet.Count)).ToString()); }
+                check_inet.Clear();
+                
+
+                Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+                using HttpResponseMessage resp = await hc.GetAsync(url);
+                string data = await resp.Content.ReadAsStringAsync();
+                stopwatch.Stop();
+
+                if (stopwatch.ElapsedMilliseconds > 0)
+                {
+                    inet_Speed = Math.Round((inet_Speed + data.Length / (stopwatch.ElapsedMilliseconds + 1)) / 2, 2);
+
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message + " "  +ex.Data );
+
+            }
+            finally
+            {
+                hc.Dispose();
+                _once_url_check = false;
+            }
+            Thread.Sleep(100);
+
+        } while (this.locked);
+
+        return;
+    }
+
+    /// <summary>
+    /// Измерение скорости по Ping
+    /// </summary>
+    public async Task<double> MeasureSpeed(CancellationToken c)
+    {
+        //защита от перегруза
+
+        active = true;
+        if (locked) { return (Speed); } else { locked = true; }
+
+        int i = 0 ;
         Ping p = new Ping();
         try
         {
-            PingReply r =  await p.SendPingAsync(Address,100, buffer);
-            status = r.Status;
-            if (r.RoundtripTime == 0) { Speed = -1; }
-            else
+            //постоянный скан
+            do
             {
-                Speed = buffer.Length / (r.RoundtripTime); // DIV 0!!!
-            }
+                i = (i % 10)+1;//от 100...500 байт
+                byte[] buffer = new byte[i*100];
+                
+
+                System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+                 PingReply r = await p.SendPingAsync(Address, 1000, buffer);
+                stopwatch.Stop();
+                
+                
+
+                ping_time = ((int)r.RoundtripTime + ping_time) / 2;
+
+                status = r.Status;
+                double _speed = 0.0f;
+                if (r.RoundtripTime == 0)
+                {
+                    _speed = (Speed + buffer.Length / (stopwatch.ElapsedMilliseconds + 1)) / 2;
+                }
+                else
+                {
+                    _speed = (Speed + buffer.Length / (r.RoundtripTime)) / 2; // DIV 0!!!
+                }
+                Speed= Math.Round(_speed, 2);
+
+                if (max_Speed < Speed) { max_Speed = Speed; }
+                if ((min_Speed > Speed) || (min_Speed == 0)) { min_Speed = Speed; }
+
+                GC.Collect();
+                Thread.Sleep (4000);
+
+            } while ((!c.IsCancellationRequested) || (locked));
+
+          
+
         }
         catch {
             Speed = -1; //error
+            ping_time = -1;
                 }
         finally
         {
+            Speed = Math.Round(Speed, 2);
+
             p.Dispose();
+            locked = false; 
         }
 
         return (Speed);
     }
-}
+}//class
 
 public class ReadNetworkConfig
 {
@@ -267,7 +460,14 @@ public class ReadNetworkConfig
     async public void ReadNetworkConfigAsync(CancellationToken token)
     {
         active_scan = true;
-        foreach (var i in gateways)
+
+        List<IPAddress> data_base = new List<IPAddress>();
+        data_base.AddRange(gateways.ToArray());
+        data_base.AddRange(dns_servers.ToArray());
+        data_base.AddRange(dhcp_servers.ToArray());
+        data_base = data_base.Distinct().ToList();  
+
+        foreach (var i in data_base)
         {
             byte[] tmp = i.GetAddressBytes();
             if (i.IsIPv6SiteLocal) continue;
@@ -282,7 +482,7 @@ public class ReadNetworkConfig
             {
                 tmp[3] = (byte)j;
                 IPAddress ip = new IPAddress(tmp);
-                Console.Write($"Проверка {ip} ... \r");
+                //Console.Write($"Проверка {ip} ... \r");
                 working_machines.Add(ip);
 
             } // for

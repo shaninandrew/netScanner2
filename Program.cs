@@ -11,33 +11,16 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Xml;
+using System.Dynamic;
+
+Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 ReadNetworkConfig config = new ReadNetworkConfig();
 config.ReadNetworkConfigAsync(new CancellationToken(false));
 config.show();
 
-/*
-HttpClient client = new HttpClient();
-int sum = 0;
-Stopwatch watch = Stopwatch.StartNew();
-for (int i = 0; i < 10; i++)
-{
-    string s = "";
-    if (i % 2 == 0) { s = await client.GetStringAsync("https://google.com/"); }
-    if (i % 2 == 1) { s = await client.GetStringAsync("https://yandex.ru/"); }
-    sum += s.Length;
-}
-watch.Stop();
 
-double inet_speed= sum / (watch.ElapsedMilliseconds+1);
-Console.WriteLine("Скорость интренета {inet_speed,7:G}");
-*/
 BlackBoard board = new BlackBoard(config);
-
-
-//board.Scan();
-
-
 
 
 
@@ -51,119 +34,126 @@ public class BlackBoard
     public int scanners = 0;
     public bool exit =false;
     public double inet_speed = 0.0f;
+
+    async Task<double> GetInternetSpeed()
+    {
+        HttpClient client = new HttpClient();
+        int sum = 0;
+        Stopwatch watch = Stopwatch.StartNew();
+        for (int i = 0; i < 20; i++)
+        {
+            string s = "";
+            if (i % 3 == 0) { s = await client.GetStringAsync("https://google.com/"); }
+            if (i % 3 == 1) { s = await client.GetStringAsync("https://yandex.ru/"); }
+            if (i % 3 == 2) { s = await client.GetStringAsync("https://microsoft.com/"); }
+            sum += s.Length;
+        }
+        watch.Stop();
+        double inet_speed = sum / (watch.ElapsedMilliseconds);
+        return inet_speed;
+
+    }
+
+
     /// <summary>
     /// Показывает результаты скана
     /// </summary>
     public void ShowBlackBoard()
     {
         //Ожидалка
-          
-        Console.SetCursorPosition(0, 0);
-        Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} ");
-        if (list.Count>0)
-        do
-        {
-           
+
             Console.SetCursorPosition(0, 0);
-            ConsoleColor c = Console.BackgroundColor;
-            Console.BackgroundColor = ConsoleColor.DarkBlue;
-            Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} | Интернет {this.inet_speed} Кб/с | ESC = выход                               \r");
-            Console.BackgroundColor = c;
-
-            /// Console.SetCursorPosition(x, y);
-
-            int i = 0;
-            lock (list)
-                list.ForEach(it =>
+        
+            Console.WriteLine($"Задачи запущены {scanners} | Целей {list.Count} ");
+            if (list.Count > 0)
+                do
                 {
-                    try
-                    {
-                        //Выводим сообщения
-                        string show_host = it.Address.ToString();
 
-                        if (it.Host != null)
+                    Console.SetCursorPosition(0, 0);
+                    ConsoleColor c = Console.BackgroundColor;
+                    Console.BackgroundColor = ConsoleColor.DarkBlue;
+                    Console.WriteLine($"Задачи запущены {scanners} │ Целей {list.Count} │ Интернет {this.inet_speed} Кб/с │ ESC = выход  │ F1 = очистка окна                             \r");
+                    Console.BackgroundColor = c;
+                    Console.WriteLine($"{"     Хост",-20} {"    Скорость мин ",-15} -{"Текущее",9} ~ {" Макс ",9} ~ {"Отклик",9}  {" ",3} мс - {" ",-10}║ ");
+
+                /// Console.SetCursorPosition(x, y);
+
+                int i = 0;
+                    lock (list)
+                        list.ForEach(it =>
                         {
-                            show_host = it.Host.Substring(0, it.Host.Length > 20 ? 20 : it.Host.Length);
-                        } //host !=null
-                        string status = it.status == IPStatus.Success ? "OK" : "!!";
-                        string speed = it.Speed.ToString();
-                        if (speed == "-1") { speed = "∞"; }
+                            try
+                            {
+                                //Выводим сообщения
+                                string show_host = it.Address.ToString();
 
-                        string Http = "";
-                        if (it.flag_http) { Http += "HTTP";  }
-                        if (it.flag_https) 
-                            { 
-                                if (Http != "") { Http += "/";  } 
-                                    Http += "HTTPS"; 
+                                if (it.Host != null)
+                                {
+                                    show_host = it.Host.Substring(0, it.Host.Length > 20 ? 20 : it.Host.Length);
+                                } //host !=null
+                                string status = it.status == IPStatus.Success ? "OK" : "!!";
+                                string speed = it.Speed.ToString();
+                                if (speed == "-1") { speed = "∞"; }
+
+                                string Http = "";
+                                if (it.flag_http) { Http += "HTTP"; }
+                                if (it.flag_https)
+                                {
+                                    if (Http != "") { Http += "/"; }
+                                    Http += "HTTPS";
+                                }
+
+                                if ((it.status == IPStatus.Success) || (it.Host != null))
+                                {
+                                    try { Console.Write($"{show_host,-20} {Http,-13} -{it.min_Speed,7:G} ~ {speed,7:G} ~ {it.max_Speed,7:G} Кб/c - {it.ping_time,3} мс - {status,-10}║ "); } catch { }
+                                    i++;
+                                    if (i % (Console.WindowWidth / 93) == 0) { Console.WriteLine(); }
+                                }
                             }
-
-                        if ((it.status == IPStatus.Success) || ( it.Host !=null ))
-                          {
-                            try { Console.Write($"{show_host,-20} {Http,-13} -{it.min_Speed,7:G}...{speed,7:G}...{it.max_Speed,7:G} Кб/c - {it.ping_time,3} мс - {status,-10}| "); } catch { }
-                            i++;
-                            if (i % 4 == 0) { Console.WriteLine(); }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message + " >> " + ex.Source + " >> " + ex.Data);
+                            }
                         }
+                        ); //list each
 
+                    if (scanners > 0) { Thread.Sleep(100); }
 
-                    }
-                    catch (Exception ex)
+                    if (Console.KeyAvailable)
                     {
-                        Console.WriteLine(ex.Message + " >> " + ex.Source + " >> " + ex.Data);
+                        if (Console.ReadKey(false).Key == ConsoleKey.Escape)
+                        {
+                            exit = true;
+                            break;
+                        }
+                    if (Console.ReadKey(false).Key == ConsoleKey.F1)
+                    {
+                        Console.Clear();
+                        
+                        break;
                     }
                 }
-                ); //list each
 
-            if (scanners > 0) { Thread.Sleep(100); }
+                    Thread.Sleep(100);
+                } while ((scanners > 0) && (list.Count > 0));
 
-            if (Console.KeyAvailable)
-            {
-                if (Console.ReadKey(false).Key == ConsoleKey.Escape)
-                { exit = true;
-                    break; }
-            }
+            GC.Collect();
+     
+         } //Показ сканеров
 
-        Thread.Sleep(100);
-        } while ((scanners > 0) && (list.Count > 0));
-
-        GC.Collect();
-    } //Показ сканеров
-
+    
 
     public async void Refresh()
     {
         // Cycle scan
         scanners = 0;
-        
-
         lock (list)
         {
             list.ForEach(itask =>
             {
                 if (itask.active)  scanners++;
-             
             });//list
-
-
         }//lock
-
-        Console.WriteLine("Определение скорости интернета....");
-
-        HttpClient client = new HttpClient();
-        client.Timeout = TimeSpan.FromSeconds(5);
-        int sum = 0;
-        Stopwatch watch = Stopwatch.StartNew();
-        for (int i = 0; i < 10; i++)
-        {
-            string s = "";
-            if (i % 2 == 0) { s = await client.GetStringAsync("https://google.com/"); }
-            if (i % 2 == 1) { s = await client.GetStringAsync("https://yandex.ru/"); }
-            sum += s.Length;
-        }
-        watch.Stop();
-        client.Dispose();
-        inet_speed = sum / (watch.ElapsedMilliseconds + 1);
-
-        
 
     }
 
@@ -171,8 +161,7 @@ public class BlackBoard
     {
         //загрузка данных
         Console.WriteLine("Сканирование ...");
-
-        
+                
         foreach (var ip in reader.working_machines)
         {
             try {
@@ -200,41 +189,42 @@ public class BlackBoard
     } //scan
 
 
-    public BlackBoard (ReadNetworkConfig? r)
+    public BlackBoard(ReadNetworkConfig? r)
     {
 
         if (r == null)
         { reader = new ReadNetworkConfig(); }
         else
         { reader = r; }
-        
-         Scan();
-        
-        exit = false;
-        
+
+        inet_speed = GetInternetSpeed().Result;
+
+
         //очистка экрана
         Console.Clear();
-        Task t = new Task(()=> 
-        {
-            do { 
-                Console.CursorTop = 0; Console.CursorLeft = 60; Console.WriteLine("***"); 
-                //    Refresh();
-            } while (!exit); 
-        });
-        t.Start();
 
-
+      
+        //Поиск сетей
+        Scan();
+        exit = false;
+        int tx = 1;
         do
         {
-            //Обнова в фоне
-            if (this.scanners == 0)
+            tx = (tx + 1) % 50+1;
+            if (tx == 40)
             {
-                Refresh();
+                Console.Clear();
             }
-            Thread.Sleep(100);
-
+            //Console.WriteLine("Замер скорости интернета...");
+            //inet_speed =  GetInternetSpeed().Result;
+            //Console.WriteLine("Консоль...");
             ShowBlackBoard();
+            Thread.Sleep(1000);
         } while (!exit);
+
+
+
+
 
     }//DeskTOp
 
@@ -290,69 +280,9 @@ public class InfoTable
 
         }
         new Task(() => { MeasureSpeed(new CancellationToken(false)); }).Start();
-        
-            
-        
     }
 
-    /// 
-    /// 
-    public async Task MeasureToUrl(Uri? url)
-    {
-
-        //Защелка от множества копий
-        if (_once_url_check ) { return ; }
-        if (!_once_url_check) {
-                                _once_url_check = !false;
-                                Thread.Sleep(10);
-                                }
-        do
-        {
-            System.Net.Http.HttpClient hc = new System.Net.Http.HttpClient();
-            hc.Timeout = TimeSpan.FromSeconds(4);
-            try
-            {
-                
-                
-                List<string> check_inet = new List<string>();
-                check_inet.Add("https://google.com/");
-                check_inet.Add("https://yandex.ru/");
-                check_inet.Add("https://java.com/");
-                check_inet.Add("https://xakep.ru/");
-                //случайный адрес
-
-                if (url == null)
-                { url = new Uri(check_inet.ElementAt(new Random(213).Next(check_inet.Count)).ToString()); }
-                check_inet.Clear();
-                
-
-                Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-                using HttpResponseMessage resp = await hc.GetAsync(url);
-                string data = await resp.Content.ReadAsStringAsync();
-                stopwatch.Stop();
-
-                if (stopwatch.ElapsedMilliseconds > 0)
-                {
-                    inet_Speed = Math.Round((inet_Speed + data.Length / (stopwatch.ElapsedMilliseconds + 1)) / 2, 2);
-
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message + " "  +ex.Data );
-
-            }
-            finally
-            {
-                hc.Dispose();
-                _once_url_check = false;
-            }
-            Thread.Sleep(100);
-
-        } while (this.locked);
-
-        return;
-    }
+    
 
     /// <summary>
     /// Измерение скорости по Ping
@@ -363,23 +293,19 @@ public class InfoTable
 
         active = true;
         if (locked) { return (Speed); } else { locked = true; }
-
-        int i = 0 ;
+        
+        int i = 1 ;
         Ping p = new Ping();
         try
         {
             //постоянный скан
             do
             {
-                i = (i % 10)+1;//от 100...500 байт
+               
                 byte[] buffer = new byte[i*100];
-                
-
                 System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-                 PingReply r = await p.SendPingAsync(Address, 1000, buffer);
+                PingReply r = await p.SendPingAsync(Address, 1000, buffer);
                 stopwatch.Stop();
-                
-                
 
                 ping_time = ((int)r.RoundtripTime + ping_time) / 2;
 
@@ -387,7 +313,8 @@ public class InfoTable
                 double _speed = 0.0f;
                 if (r.RoundtripTime == 0)
                 {
-                    _speed = (Speed + buffer.Length / (stopwatch.ElapsedMilliseconds + 1)) / 2;
+                    i = (i % 32) + 1;//от 100...500 байт
+                    //_speed = (Speed + buffer.Length / (stopwatch.ElapsedMilliseconds + 1)) / 2;
                 }
                 else
                 {
@@ -398,8 +325,7 @@ public class InfoTable
                 if (max_Speed < Speed) { max_Speed = Speed; }
                 if ((min_Speed > Speed) || (min_Speed == 0)) { min_Speed = Speed; }
 
-                GC.Collect();
-                Thread.Sleep (4000);
+                Thread.Sleep (600);
 
             } while ((!c.IsCancellationRequested) || (locked));
 
@@ -490,7 +416,10 @@ public class ReadNetworkConfig
         }
         
         //убираем задвоенные
-        working_machines = working_machines.Distinct().ToList();    
+        working_machines = working_machines.Distinct().ToList();
+        working_machines.Insert(0,IPAddress.Parse("1.1.1.1"));
+        working_machines.Insert(0,IPAddress.Parse("8.8.8.8"));
+
     }
 
     public void show()

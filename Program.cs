@@ -74,7 +74,7 @@ public class BlackBoard
                     Console.BackgroundColor = ConsoleColor.DarkBlue;
                     Console.WriteLine($"Задачи запущены {scanners} │ Целей {list.Count} │ Интернет {this.inet_speed} Кб/с │ ESC = выход  │ F1 = очистка окна                             \r");
                     Console.BackgroundColor = c;
-                    Console.WriteLine($"{"     Хост",-20} {"    Скорость мин ",-15} -{"Текущее",9} ~ {" Макс ",9} ~ {"Отклик",9}  {" ",3} мс - {" ",-10}║ ");
+                    Console.WriteLine($"{"  Хост",-20} {" ",-18} -{"Скорость Мин. Текущее",15} ~ {" Макс ",5} ~ {"Отклик, мс",13}  {" ",5} ║ ");
 
                 /// Console.SetCursorPosition(x, y);
 
@@ -89,7 +89,7 @@ public class BlackBoard
 
                                 if (it.Host != null)
                                 {
-                                    show_host = it.Host.Substring(0, it.Host.Length > 20 ? 20 : it.Host.Length);
+                                    show_host = it.Host.Substring(0, it.Host.Length > 25 ? 25 : it.Host.Length);
                                 } //host !=null
                                 string status = it.status == IPStatus.Success ? "OK" : "!!";
                                 string speed = it.Speed.ToString();
@@ -105,7 +105,7 @@ public class BlackBoard
 
                                 if ((it.status == IPStatus.Success) || (it.Host != null))
                                 {
-                                    try { Console.Write($"{show_host,-20} {Http,-13} -{it.min_Speed,7:G} ~ {speed,7:G} ~ {it.max_Speed,7:G} Кб/c - {it.ping_time,3} мс - {status,-10}║ "); } catch { }
+                                    try { Console.Write($"{show_host,-25} {Http,-13} -{it.min_Speed,7:G} ~ {speed,7:G} ~ {it.max_Speed,7:G} Кб/c - {it.ping_time,3} мс - {status,-10}║ "); } catch { }
                                     i++;
                                     if (i % (Console.WindowWidth / 93) == 0) { Console.WriteLine(); }
                                 }

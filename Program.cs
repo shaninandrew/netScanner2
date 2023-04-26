@@ -35,7 +35,7 @@ public class BlackBoard
     public bool exit =false;
     public double inet_speed = 0.0f;
 
-    async Task<double> GetInternetSpeed()
+    public double GetInternetSpeed()
     {
         using (HttpClient client = new HttpClient())
         {
@@ -231,7 +231,7 @@ public class BlackBoard
         { reader = r; }
 
 
-        inet_speed = GetInternetSpeed().Result;
+        inet_speed = GetInternetSpeed();
    
 
         //Поиск сетей
@@ -243,7 +243,7 @@ public class BlackBoard
             tx = (tx + 1) % 50+1;
             if (tx == 2)
             {
-                ThreadStart ts = new ThreadStart(delegate(){ inet_speed = GetInternetSpeed().Result; });
+                ThreadStart ts = new ThreadStart(delegate(){ inet_speed = GetInternetSpeed(); });
                 Thread t = new Thread(ts);
                 t.Start();
 

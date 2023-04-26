@@ -47,16 +47,16 @@ public class BlackBoard
                 string s = "";
                 try
                 {
-                    try { if (i % 3 == 0) { s = client.GetStringAsync("https://google.com/").Result; sum += s.Length;  } } catch { }
+                    try { if (i % 3 == 0) { s = client.GetStringAsync("https://google.com/").Result; sum += s.Length;  } } catch { break; }
                     try
                     {
                         if (i % 3 == 1) { s = client.GetStringAsync("https://yandex.ru/").Result; sum += s.Length; }
                     }
-                        catch { }
+                        catch { break; }
                     try
                     {
                         if (i % 3 == 2) { s =  client.GetStringAsync("https://microsoft.com/").Result; sum += s.Length; }
-                    } catch { }
+                    } catch { break; }
 
                     
                 }

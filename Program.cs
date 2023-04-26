@@ -37,43 +37,20 @@ public class BlackBoard
 
     public double GetInternetSpeed()
     {
-        using (HttpClient client = new HttpClient())
+        HttpClient client = new HttpClient();
+        int sum = 0;
+        Stopwatch watch = Stopwatch.StartNew();
+        for (int i = 0; i < 20; i++)
         {
-            int sum = 0;
-            Stopwatch watch = Stopwatch.StartNew();
-            for (int i = 0; i < 20; i++)
-            {
-
-                string s = "";
-                try
-                {
-                    try { if (i % 3 == 0) { s = client.GetStringAsync("https://google.com/").Result; sum += s.Length;  } } catch { break; }
-                    try
-                    {
-                        if (i % 3 == 1) { s = client.GetStringAsync("https://yandex.ru/").Result; sum += s.Length; }
-                    }
-                        catch { break; }
-                    try
-                    {
-                        if (i % 3 == 2) { s =  client.GetStringAsync("https://microsoft.com/").Result; sum += s.Length; }
-                    } catch { break; }
-
-                    
-                }
-                catch (Exception ex)
-                {
-                Debug.WriteLine(ex);
-                }
-                finally 
-                {
-                
-                }
-            }
-            watch.Stop();
-            client.Dispose();   
-            double inet_speed = sum / (watch.ElapsedMilliseconds);
-            return inet_speed;
+            string s = "";
+            if (i % 3 == 0) { s = await client.GetStringAsync("https://google.com/"); }
+            if (i % 3 == 1) { s = await client.GetStringAsync("https://yandex.ru/"); }
+            if (i % 3 == 2) { s = await client.GetStringAsync("https://microsoft.com/"); }
+            sum += s.Length;
         }
+        watch.Stop();
+        double inet_speed = sum / (watch.ElapsedMilliseconds);
+        return inet_speed;
 
     }
 
@@ -119,9 +96,8 @@ public class BlackBoard
                                 if (speed == "-1") { speed = "∞"; }
 
                                 string Http = "";
-                                if (it.flag_http) { Http += "HTTP"; }
-                                
-                                if (it.flag_https)
+                                if (it.Result.flag_http) { Http += "HTTP"; }
+                                if (it.Result.flag_https)
                                 {
                                     if (Http != "") { Http += "/"; }
                                     Http += "HTTPS";
@@ -230,6 +206,7 @@ public class BlackBoard
         else
         { reader = r; }
 
+        inet_speed = GetInternetSpeed().Result;
 
         inet_speed = GetInternetSpeed();
    
@@ -298,52 +275,42 @@ public class InfoTable
     {
 
         //if (this.status != IPStatus.Success) { return; }
-
-        for (int i = 1; i < 3; i++)
+        flag_http = !true;
+         int read = 0;
+        Thread.Sleep(10);
+        Stopwatch stopwatch = new Stopwatch();
+        try
         {
-
-            string prefix = "http://";
-            if (i == 2) { prefix = "https://"; } 
-
-            Uri url = new Uri( prefix + this.Address);
-            using (HttpClient request = new HttpClient())
+            Uri url = new Uri("https://" + this.Address.ToString() + "/"
+                ); ;
+            WebRequest request = HttpWebRequest.Create(url);
+            request.CachePolicy = new RequestCachePolicy(RequestCacheLevel.Reload);
+            request.Method = "GET";
+            request.Timeout = 2000;
+            request.ContentType = "text/html";
+            byte[] buffer = new byte[2048];
+            WebResponse wr =  request.GetResponse();
+            MemoryStream ms = (MemoryStream)wr.GetResponseStream();
+            read = ms.Read(buffer, 0, buffer.Length);
+            ms.Close();
+            flag_http = true;
+            
+            
+        }
+        catch (Exception ex)
+        {
+            flag_http = !true;
+        }
+        finally
+        {
+            stopwatch.Stop();
+            if ((stopwatch.ElapsedMilliseconds > 0) && (flag_http))
             {
-                bool tmp_flag = false;
-                try
-                {
-
-                    request.Timeout = TimeSpan.FromSeconds(5);
-                    Stopwatch stopwatch = new Stopwatch();
-                    string s = await request.GetStringAsync(url);
-                    int read = s.Length;
-
-
-                    stopwatch.Stop();
-                    if (stopwatch.ElapsedMilliseconds > 0)
-                    {
-                        Speed = (Speed + read / stopwatch.ElapsedMilliseconds) / 2;
-                    }
-                    tmp_flag = true;
-                }
-                catch (Exception ex)
-                {
-                    tmp_flag = !true;
-                }
-                finally
-                {
-                    request.Dispose();
-                    Task.Delay(20);
-
-                    if (i == 1) { flag_http = tmp_flag; } //                    "http://";
-                    if (i == 2) { flag_https = tmp_flag; } // https
-
-
-                }
-
+                Speed = (Speed + read / stopwatch.ElapsedMilliseconds) / 2;
             }
-        } //for 
-
-
+        }
+        return true;
+      
     }
 
     public InfoTable(string host)
@@ -372,10 +339,8 @@ public class InfoTable
     /// </summary>
     public void CoreTasker()
     {
-        Task.Run(() => { CheckWeb(); });
-        new Task(() => { MeasureSpeed(new CancellationToken(false)); }).Start();
-        
-
+         bool x = await CheckWeb();
+        // double x2= await MeasureSpeed(new CancellationToken(false));
     }
 
 

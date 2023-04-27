@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Collections;
 using System.Net;
@@ -22,6 +22,8 @@ config.show();
 Console.Title = "Сетевое окружение";
 
 BlackBoard board = new BlackBoard(config);
+
+
 
 
 
@@ -220,6 +222,7 @@ public class BlackBoard
 
         inet_speed = GetInternetSpeed();
 
+        WebServer server = new WebServer(this.list);
 
         //Поиск сетей
         Scan();
@@ -230,9 +233,9 @@ public class BlackBoard
             tx = (tx + 1) % 50 + 1;
             if (tx == 2)
             {
-                ThreadStart ts = new ThreadStart(delegate () { inet_speed = GetInternetSpeed(); });
+               /* ThreadStart ts = new ThreadStart(delegate () { inet_speed = GetInternetSpeed(); });
                 Thread t = new Thread(ts);
-                t.Start();
+                t.Start();*/
 
                 Console.Clear();
             }
@@ -240,6 +243,8 @@ public class BlackBoard
             ShowBlackBoard();
             Thread.Sleep(1000);
         } while (!exit);
+
+        server.Stop(true);
 
 
 
@@ -534,3 +539,115 @@ public class ReadNetworkConfig
     }
 
 } //class
+
+
+
+class WebServer
+{
+    public bool stop = false;
+    List<InfoTable> data = null;
+
+    public WebServer(List<InfoTable> list )
+    {
+        data = list;
+        RunServer();        
+    }
+
+    async public void RunServer()
+    {
+        /*
+         * System.Net.Quic.QuicListenerOptions options = new System.Net.Quic.QuicListenerOptions();
+         options.ListenEndPoint = new IPEndPoint(IPAddress.Parse("0.0.0.0"), 8090);
+         System.Net.Quic.QuicListener server = new System.Net.Quic.QuicListener();
+
+         server.ListenAsync(options);
+         server.ConfigureAwait(false);
+        */
+        using ( System.Net.HttpListener server = new HttpListener())
+        {
+            
+          
+                server.Prefixes.Add("http://127.0.0.1:8090/");
+                server.Start();
+                
+                do
+                {
+                    HttpListenerContext hc = await server.GetContextAsync();
+                    hc.Response.StatusCode = 200;
+                    hc.Response.ContentType = "text/html;charset=utf-8";
+                
+
+                    StreamWriter sw = new StreamWriter(hc.Response.OutputStream);
+                    sw.WriteLine("<html>");
+                    sw.WriteLine("<head> <meta http - equiv = \"refresh\" content = \"10\"> </head> "); 
+                    sw.WriteLine("<body>");
+                    sw.WriteLine("Веб сервер <hr><pre>");
+
+                    int i = 0;
+                    lock (this.data)
+                        data.ForEach(it =>
+                        {
+                            try
+                            {
+                                //Выводим сообщения
+                                string show_host = it.Address.ToString();
+
+                                if (it.Host != null)
+                                {
+                                    if ((it.flag_http) || (it.flag_https))     show_host = "<a href='https://"+it.Host+"'>"+ it.Host+"</a>";
+                                    else show_host = "<a href='file://" + it.Host + "'>" + it.Host + "</a>";
+                                } //host !=null
+                                string status = it.status == IPStatus.Success ? "OK" : "!!";
+                                string speed = it.Speed.ToString();
+                                if (speed == "-1") { speed = "∞"; }
+
+                                string Http = "";
+                                if (it.flag_http) { Http += "HTTP"; }
+                                if (it.flag_https)
+                                {
+                                    if (Http != "") { Http += "/"; }
+                                    Http += "HTTPS";
+
+                                }
+                                if (Http == "")
+                                { Http = "UnCHK"; }
+
+                                if ((it.status == IPStatus.Success) || (it.Host != null))
+                                {
+                                    try {
+                                        
+                                        sw.Write($"{show_host,-55} {Http,-13} -{it.min_Speed,7:G} ~ {speed,7:G} ~ {it.max_Speed,7:G} Кб/c - {it.ping_time,3} мс - {status,-10} ");
+                                        sw.Write("<br>");
+
+                                    } catch { }
+                                    
+                                    i++;
+                                
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // Console.WriteLine(ex.Message + " >> " + ex.Source + " >> " + ex.Data);
+                            }
+                        }
+                        ); //list each
+
+
+                     sw.WriteLine("</pre></body>");
+                    sw.WriteLine("</html>");
+                    sw.Close();
+                    Task.Delay(1000);
+                    hc.Response.Redirect(server.Prefixes.First());
+
+                } while (!stop);
+         }
+
+    }
+
+    public void Stop(bool stop)
+    { 
+        this.stop = stop;   
+    }
+
+
+}

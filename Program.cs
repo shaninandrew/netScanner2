@@ -233,10 +233,6 @@ public class BlackBoard
             tx = (tx + 1) % 50 + 1;
             if (tx == 2)
             {
-               /* ThreadStart ts = new ThreadStart(delegate () { inet_speed = GetInternetSpeed(); });
-                Thread t = new Thread(ts);
-                t.Start();*/
-
                 Console.Clear();
             }
 

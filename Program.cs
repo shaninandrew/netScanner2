@@ -360,10 +360,10 @@ public class InfoTable
     /// <summary>
     /// Главный датчик
     /// </summary>
-    public void CoreTasker()
+    public async void CoreTasker()
     {
         CheckWeb();
-        // double x2= await MeasureSpeed(new CancellationToken(false));
+         double x2= await MeasureSpeed(new CancellationToken(false));
     }
 
 

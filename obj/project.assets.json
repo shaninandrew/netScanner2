@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "G:\\Мои проекты.VS\\NetScanner\\NetScanner\\NetScanner.csproj",
+      "projectUniqueName": "D:\\Документы\\GitHub\\netScanner2\\NetScanner.csproj",
       "projectName": "NetScanner",
-      "projectPath": "G:\\Мои проекты.VS\\NetScanner\\NetScanner\\NetScanner.csproj",
+      "projectPath": "D:\\Документы\\GitHub\\netScanner2\\NetScanner.csproj",
       "packagesPath": "C:\\Users\\hedge\\.nuget\\packages\\",
-      "outputPath": "G:\\Мои проекты.VS\\NetScanner\\NetScanner\\obj\\",
+      "outputPath": "D:\\Документы\\GitHub\\netScanner2\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\hedge\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -61,7 +61,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.201\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
       }
     }
   }

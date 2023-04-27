@@ -246,10 +246,6 @@ public class BlackBoard
 
         server.Stop(true);
 
-
-
-
-
     }//DeskTOp
 
 }//class
